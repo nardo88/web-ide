@@ -2,23 +2,30 @@ import express from 'express'
 import cors from 'cors'
 import Docker from 'dockerode'
 
-const docker = new Docker({ socketPath: '/var/run/docker.sock' })
-
 const app = express()
 
-// typescript
-
 const getImageAndCmd = (language, code) => {
-  if (language === 'python') {
-    return { image: 'python:3.9', cmd: ['python', '-c', code] }
+  const images = {
+    python: {
+      image: 'docker.io/library/python:3.9',
+      cmd: ['python', '-c', code],
+    },
+    php: {
+      image: 'docker.io/library/php:8.2-cli',
+      cmd: ['php', '-r', code],
+    },
   }
-  if (language === 'php') {
-    return { image: 'php:8.2-cli', cmd: ['php', '-r', code] }
-  }
+
+  if (!images[language]) throw new Error(`Unsupported language: ${language}`)
+  return images[language]
 }
 
 async function runCode(language, code) {
   const { image, cmd } = getImageAndCmd(language, code)
+
+  const docker = new Docker()
+  await docker.pull('docker.io/library/python:3.9')
+
   const container = await docker.createContainer({
     Image: image,
     Cmd: cmd,

@@ -32,6 +32,13 @@
   gap: 15px;
 }
 
+.resultWrapper {
+  padding: 20px;
+  background: #000;
+  border-radius: 12px;
+}
+
 .resultValue {
   white-space: pre-wrap;
+  color: white;
 }

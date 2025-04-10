@@ -5,7 +5,7 @@ import { classNames } from '../../helpers/classNames'
 import { Checkbox } from '../CheckBox/CheckBox'
 import axios from 'axios'
 
-type LanguageTypes = 'python' | 'php' | 'typescript'
+type LanguageTypes = 'python' | 'php'
 
 export const App: FC = () => {
   const [language, setLanguage] = useState<LanguageTypes>('python')
@@ -43,6 +43,11 @@ export const App: FC = () => {
             value={code}
             height="400px"
             theme="vs-dark"
+            options={{
+              fontSize: 16, // Увеличиваем шрифт (по умолчанию 14)
+              fontFamily: 'Consolas, "Courier New", monospace', // Можно сменить шрифт
+              lineHeight: 24, // Межстрочный интервал
+            }}
           />
           <button disabled={isLoading} onClick={execute} className={cls.executeBtn}>
             execute
@@ -50,7 +55,9 @@ export const App: FC = () => {
         </div>
 
         <div className={classNames(cls.result, {}, [cls.block])}>
-          <code className={classNames(cls.resultValue)}>{result}</code>
+          <div className={cls.resultWrapper}>
+            <code className={classNames(cls.resultValue)}>{result}</code>
+          </div>
         </div>
       </div>
       <div className={classNames(cls.languages, {}, [cls.block])}>
@@ -67,13 +74,6 @@ export const App: FC = () => {
               checked={language === 'php'}
               onChangeHandler={() => setLanguage('php')}
               label="php"
-            />
-          </li>
-          <li>
-            <Checkbox
-              checked={language === 'typescript'}
-              onChangeHandler={() => setLanguage('typescript')}
-              label="typescript"
             />
           </li>
         </ul>
