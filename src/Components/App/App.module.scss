@@ -1,0 +1,37 @@
+.app {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 9fr 3fr;
+  gap: 15px;
+}
+
+.block {
+  border-radius: 12px;
+  padding: 20px;
+  background-color: #6a6a6a;
+}
+
+.code {
+  display: grid;
+  gap: 15px;
+}
+
+.executeBtn {
+  background-color: skyblue;
+  color: white;
+  border: none;
+  margin-left: auto;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-style: 16px;
+  cursor: pointer;
+}
+
+.ide {
+  display: grid;
+  gap: 15px;
+}
+
+.resultValue {
+  white-space: pre-wrap;
+}
