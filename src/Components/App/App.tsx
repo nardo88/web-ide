@@ -56,6 +56,7 @@ export const App: FC = () => {
 
         <div className={classNames(cls.result, {}, [cls.block])}>
           <div className={cls.resultWrapper}>
+            {isLoading && <p style={{ color: 'white' }}>Загрузка...</p>}
             <code className={classNames(cls.resultValue)}>{result}</code>
           </div>
         </div>
