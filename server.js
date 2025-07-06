@@ -14,6 +14,19 @@ const getImageAndCmd = (language, code) => {
       image: 'docker.io/library/php:8.2-cli',
       cmd: ['php', '-r', code],
     },
+    typescript: {
+      image: 'docker.io/library/node:20',
+      cmd: [
+        'sh',
+        '-c',
+        `
+echo "${code}" > script.ts && \
+npm install -g typescript --silent --no-progress --loglevel=error && \
+tsc script.ts --target es2016 --module commonjs --skipLibCheck && \
+node script.js
+  `.trim(),
+      ],
+    },
   }
 
   if (!images[language]) throw new Error(`Unsupported language: ${language}`)
@@ -24,36 +37,32 @@ async function runCode(language, code) {
   const { image, cmd } = getImageAndCmd(language, code)
 
   const docker = new Docker()
-  await docker.pull('docker.io/library/python:3.9')
+  await docker.pull(image)
 
   const container = await docker.createContainer({
     Image: image,
     Cmd: cmd,
     Tty: false,
     HostConfig: {
-      AutoRemove: true,
       Memory: 100 * 1024 * 1024,
-      NetworkMode: 'none',
+      // NetworkMode: 'none',
     },
   })
 
   await container.start()
-  await container.wait()
 
-  const logs = await container.logs({
-    stdout: true,
-    stderr: true,
-    follow: false,
-    timestamps: false,
-  })
+  const { StatusCode } = await container.wait()
 
-  // Удаляем ВСЕ Docker-заголовки (\x01... или \x02...)
-  const cleanOutput = logs
-    .toString('utf8')
-    .replace(/(\x01|\x02)\x00\x00\x00\x00\x00\x00./g, '')
-    .trim()
+  const logs = await container.logs({ stdout: true, stderr: true })
+  await container.remove()
 
-  return cleanOutput
+  return {
+    output: logs
+      .toString('utf8')
+      .replace(/(\x01|\x02)\x00\x00\x00\x00\x00\x00./g, '')
+      .trim(),
+    success: StatusCode === 0,
+  }
 }
 
 app.use(express.json())
@@ -66,9 +75,9 @@ app.get('/', (_req, res) => {
 app.post('/execute', async (req, res) => {
   const { language, code } = req.body
   try {
-    const output = await runCode(language, code)
+    const { output, success } = await runCode(language, code)
     console.log('output: ', output)
-    res.json({ success: true, output })
+    res.json({ success, output })
   } catch (err) {
     console.log('err: ', err)
     res.status(500).json({ error: err.message })

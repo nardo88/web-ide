@@ -5,10 +5,10 @@ import { classNames } from '../../helpers/classNames'
 import { Checkbox } from '../CheckBox/CheckBox'
 import axios from 'axios'
 
-type LanguageTypes = 'python' | 'php'
+type LanguageTypes = 'python' | 'php' | 'typescript'
 
 export const App: FC = () => {
-  const [language, setLanguage] = useState<LanguageTypes>('python')
+  const [language, setLanguage] = useState<LanguageTypes>('typescript')
   const [code, setCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState('')
@@ -75,6 +75,13 @@ export const App: FC = () => {
               checked={language === 'php'}
               onChangeHandler={() => setLanguage('php')}
               label="php"
+            />
+          </li>
+          <li>
+            <Checkbox
+              checked={language === 'typescript'}
+              onChangeHandler={() => setLanguage('typescript')}
+              label="TypeScript"
             />
           </li>
         </ul>
