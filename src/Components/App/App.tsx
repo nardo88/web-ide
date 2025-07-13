@@ -37,6 +37,7 @@ export const App: FC = () => {
         <div className={classNames(cls.ide, {}, [cls.block])}>
           <Editor
             defaultLanguage={language}
+            key={language}
             value={code}
             onChange={(v) => v && setCode(v)}
             height="400px"
