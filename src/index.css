@@ -2,11 +2,13 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: sans-serif;
 }
 
 body {
-  background-color: #000;
+  margin: 0;
+  background: #1e1e1e;
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
 }
 
 ul {

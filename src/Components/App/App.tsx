@@ -8,8 +8,8 @@ import axios from 'axios'
 type LanguageTypes = 'python' | 'php' | 'typescript'
 
 export const App: FC = () => {
-  const [language, setLanguage] = useState<LanguageTypes>('typescript')
-  const [code, setCode] = useState('')
+  const [language, setLanguage] = useState<LanguageTypes>('python')
+  const [code, setCode] = useState("const a = ''")
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState('')
 
@@ -37,16 +37,21 @@ export const App: FC = () => {
         <div className={classNames(cls.ide, {}, [cls.block])}>
           <Editor
             defaultLanguage={language}
-            onChange={(v) => {
-              if (v) setCode(v)
-            }}
             value={code}
+            onChange={(v) => v && setCode(v)}
             height="400px"
             theme="vs-dark"
+            onMount={(editor) => {
+              editor.updateOptions({
+                fontFamily: 'JetBrains Mono, monospace',
+                fontLigatures: false,
+                fontSize: 16,
+                lineHeight: 24,
+              })
+            }}
             options={{
-              fontSize: 16, // Увеличиваем шрифт (по умолчанию 14)
-              fontFamily: 'Consolas, "Courier New", monospace', // Можно сменить шрифт
-              lineHeight: 24, // Межстрочный интервал
+              // minimap: { enabled: false },
+              renderWhitespace: 'none',
             }}
           />
           <button disabled={isLoading} onClick={execute} className={cls.executeBtn}>
