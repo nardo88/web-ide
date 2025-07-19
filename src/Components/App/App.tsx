@@ -1,9 +1,10 @@
-import { FC, useState } from 'react'
+import { FC, useEffect, useState } from 'react'
 import Editor from '@monaco-editor/react'
 import cls from './App.module.scss'
 import { classNames } from '../../helpers/classNames'
 import { Checkbox } from '../CheckBox/CheckBox'
-import axios from 'axios'
+
+import { loadPyodide, PyodideInterface } from 'pyodide'
 
 type LanguageTypes = 'python' | 'php' | 'typescript'
 
@@ -12,25 +13,51 @@ export const App: FC = () => {
   const [code, setCode] = useState("const a = ''")
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState('')
+  const [isPyodideLoading, setIsPyodideLoading] = useState(false)
+  const [pyodide, setPyodide] = useState<PyodideInterface | null>(null)
+  console.log('pyodide: ', pyodide)
 
-  const execute = () => {
-    if (!code) return
+  const execute = async () => {
+    if (!code || !pyodide || language !== 'python') return
+
     setIsLoading(true)
     setResult('')
-    axios
-      .post('http://localhost:5000/execute', {
-        language,
-        code,
-      })
-      .then(({ data }) => {
-        console.log('data: ', data)
-        setResult(data.output)
+
+    try {
+      await pyodide.runPythonAsync(`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+
+${code}
+
+result = sys.stdout.getvalue()
+result
+      `)
+
+      const output = pyodide.globals.get('result')
+      setResult(output || 'Код выполнен (но вывод пуст)')
+    } catch (error: any) {
+      setResult(`Ошибка: ${error.message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    setIsPyodideLoading(true)
+    loadPyodide({
+      indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.0/full/',
+    })
+      .then((py) => {
+        setPyodide(py)
+        setIsPyodideLoading(false)
       })
       .catch((e) => {
-        console.error(e.response)
+        console.log('error', e)
       })
-      .finally(() => setIsLoading(false))
-  }
+  }, [])
+
   return (
     <div className={classNames(cls.app, {}, ['container'])}>
       <div className={cls.code}>
@@ -50,10 +77,7 @@ export const App: FC = () => {
                 lineHeight: 24,
               })
             }}
-            options={{
-              // minimap: { enabled: false },
-              renderWhitespace: 'none',
-            }}
+            options={{ renderWhitespace: 'none' }}
           />
           <button disabled={isLoading} onClick={execute} className={cls.executeBtn}>
             execute
