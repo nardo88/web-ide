@@ -1,4 +1,4 @@
-import { FC, useEffect, useState, useRef } from 'react'
+import { FC, useEffect, useState, useRef, useCallback } from 'react'
 import Editor from '@monaco-editor/react'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
@@ -10,20 +10,12 @@ import { loadPyodide, PyodideInterface } from 'pyodide'
 
 type LanguageTypes = 'python' | 'php' | 'typescript'
 
+// Кешируем загруженные пакеты Pyodide
+const loadedPackages = new Set<string>()
+
 export const App: FC = () => {
   const [language, setLanguage] = useState<LanguageTypes>('python')
-  const [code, setCode] = useState(`# Найдем минимальное из трех чисел
-a = int(input("Введите первое число: "))
-b = int(input("Введите второе число: "))
-c = int(input("Введите третье число: "))
-
-min_val = a
-if b < min_val:
-    min_val = b
-if c < min_val:
-    min_val = c
-
-print("Наименьшее число:", min_val)`)
+  const [code, setCode] = useState('')
   const [pyodide, setPyodide] = useState<PyodideInterface | null>(null)
   const [isPyodideLoading, setIsPyodideLoading] = useState(true)
   const [isRunning, setIsRunning] = useState(false)
@@ -33,111 +25,101 @@ print("Наименьшее число:", min_val)`)
   const fitAddon = useRef<FitAddon | null>(null)
   const inputQueue = useRef<string[]>([])
   const resolveInputPromise = useRef<((value: string) => void) | null>(null)
+  const pyodideInstance = useRef<PyodideInterface | null>(null)
 
-  // Инициализация терминала
-  useEffect(() => {
-    if (!terminalRef.current) return
-
-    // Создаем новый терминал при каждом монтировании
-    terminalInstance.current = new Terminal({
-      cursorBlink: true,
-      fontFamily: 'JetBrains Mono, monospace',
-      fontSize: 14,
-      theme: {
-        background: '#1e1e1e',
-        foreground: '#d4d4d4',
-      },
-      allowTransparency: true,
-    })
-
-    fitAddon.current = new FitAddon()
-    terminalInstance.current.loadAddon(fitAddon.current)
-    terminalInstance.current.open(terminalRef.current)
-    fitAddon.current.fit()
-
-    const handleTerminalData = (data: string) => {
-      if (data === '\r') {
-        if (resolveInputPromise.current) {
-          const input = inputQueue.current.shift()
-          if (input !== undefined) {
-            terminalInstance.current?.writeln('')
-            resolveInputPromise.current(input)
-            resolveInputPromise.current = null
-          }
-        }
-      } else if (data === '\x7f') {
-        if (
-          inputQueue.current.length > 0 &&
-          inputQueue.current[inputQueue.current.length - 1].length > 0
-        ) {
-          const currentInput = inputQueue.current[inputQueue.current.length - 1]
-          inputQueue.current[inputQueue.current.length - 1] = currentInput.slice(0, -1)
-          terminalInstance.current?.write('\b \b')
-        }
-      } else {
-        if (inputQueue.current.length === 0) {
-          inputQueue.current.push('')
-        }
-        inputQueue.current[inputQueue.current.length - 1] += data
-        terminalInstance.current?.write(data)
-      }
-    }
-
-    terminalInstance.current.onData(handleTerminalData)
-
-    return () => {
-      terminalInstance.current?.dispose()
-      terminalInstance.current = null
-    }
-  }, [])
-
-  // Полная очистка терминала
-  const resetTerminal = () => {
+  // Оптимизированная функция сброса терминала
+  const resetTerminal = useCallback(() => {
     if (terminalInstance.current) {
-      // Создаем новый терминал вместо очистки
-      terminalInstance.current.dispose()
-      terminalInstance.current = new Terminal({
-        cursorBlink: true,
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: 14,
-        theme: {
-          background: '#1e1e1e',
-          foreground: '#d4d4d4',
-        },
-      })
-
-      if (fitAddon.current && terminalRef.current) {
-        terminalInstance.current.loadAddon(fitAddon.current)
-        terminalInstance.current.open(terminalRef.current)
-        fitAddon.current.fit()
-      }
+      terminalInstance.current.reset()
+      terminalInstance.current.clear()
+      terminalInstance.current.write('\x1b[32m> \x1b[0m')
     }
     inputQueue.current = []
     resolveInputPromise.current = null
-  }
+  }, [])
 
-  // Инициализация Pyodide
-  useEffect(() => {
-    const initPyodide = async () => {
-      try {
-        const pyodideInstance = await loadPyodide({
-          indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.0/full/',
-          stdout: (msg) => terminalInstance.current?.write(msg),
-          stderr: (msg) => terminalInstance.current?.write('\x1b[31m' + msg + '\x1b[0m'),
+  // Инициализация терминала с оптимизацией
+  const initTerminal = useCallback(() => {
+    if (!terminalRef.current || terminalInstance.current) return
+
+    const terminal = new Terminal({
+      cursorBlink: true,
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: 14,
+      theme: { background: '#1e1e1e', foreground: '#d4d4d4' },
+      allowTransparency: true,
+    })
+
+    const addon = new FitAddon()
+    terminal.loadAddon(addon)
+    terminal.open(terminalRef.current)
+    addon.fit()
+
+    terminal.onData((data) => {
+      if (data === '\r') {
+        if (resolveInputPromise.current && inputQueue.current.length > 0) {
+          terminal.writeln('')
+          resolveInputPromise.current(inputQueue.current.shift()!)
+          resolveInputPromise.current = null
+        }
+      } else if (data === '\x7f') {
+        if (inputQueue.current.length > 0) {
+          const input = inputQueue.current[0]
+          if (input.length > 0) {
+            inputQueue.current[0] = input.slice(0, -1)
+            terminal.write('\b \b')
+          }
+        }
+      } else {
+        if (inputQueue.current.length === 0) inputQueue.current.push('')
+        inputQueue.current[0] += data
+        terminal.write(data)
+      }
+    })
+
+    terminalInstance.current = terminal
+    fitAddon.current = addon
+    terminal.write('\x1b[32mИнициализация...\x1b[0m\r\n')
+  }, [])
+
+  // Загрузка необходимых пакетов Pyodide
+  const loadRequiredPackages = useCallback(async (pyodide: PyodideInterface) => {
+    const requiredPackages = ['numpy', 'pandas']
+    const packagesToLoad = requiredPackages.filter((pkg) => !loadedPackages.has(pkg))
+
+    if (packagesToLoad.length > 0) {
+      await pyodide.loadPackage(packagesToLoad)
+      packagesToLoad.forEach((pkg) => loadedPackages.add(pkg))
+    }
+  }, [])
+
+  // Инициализация Pyodide с кешированием
+  const initPyodide = useCallback(async () => {
+    if (pyodideInstance.current) return pyodideInstance.current
+
+    try {
+      setIsPyodideLoading(true)
+      resetTerminal()
+
+      const instance = await loadPyodide({
+        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.0/full/',
+        stdout: (msg) => terminalInstance.current?.write(msg),
+        stderr: (msg) => terminalInstance.current?.write(`\x1b[31m${msg}\x1b[0m`),
+      })
+
+      await loadRequiredPackages(instance)
+
+      instance.globals.set('input', (prompt = '') => {
+        terminalInstance.current?.write(prompt)
+        return new Promise<string>((resolve) => {
+          resolveInputPromise.current = resolve
         })
+      })
 
-        pyodideInstance.globals.set('input', (prompt = '') => {
-          terminalInstance.current?.write(prompt)
-          return new Promise<string>((resolve) => {
-            resolveInputPromise.current = resolve
-          })
-        })
-
-        setPyodide(pyodideInstance)
-
-        await pyodideInstance.runPythonAsync(`
+      await instance.runPythonAsync(`
 import sys
 import traceback
+from js import console
 
 def run_user_code():
     try:
@@ -148,33 +130,58 @@ def run_user_code():
         print("\\x1b[31mОшибка выполнения:\\x1b[0m")
         traceback.print_exc()
 `)
-        terminalInstance.current?.writeln('\x1b[32mPython готов к работе!\x1b[0m')
-      } catch (error) {
-        terminalInstance.current?.writeln('\x1b[31mОшибка загрузки Python:\x1b[0m')
-        terminalInstance.current?.writeln(`\x1b[31m${error}\x1b[0m`)
-      } finally {
-        setIsPyodideLoading(false)
-      }
+
+      resetTerminal()
+      terminalInstance.current?.writeln('\x1b[32mPython готов к работе!\x1b[0m\r\n')
+      pyodideInstance.current = instance
+      return instance
+    } catch (error) {
+      terminalInstance.current?.writeln(`\x1b[31mОшибка инициализации: ${error}\x1b[0m\r\n`)
+      throw error
+    } finally {
+      setIsPyodideLoading(false)
     }
+  }, [loadRequiredPackages, resetTerminal])
 
-    initPyodide()
-  }, [])
+  // Основной эффект инициализации
+  useEffect(() => {
+    initTerminal()
+    const controller = new AbortController()
 
-  const executeCode = async () => {
-    if (!pyodide || !terminalInstance.current) return
+    ;(async () => {
+      try {
+        const instance = await initPyodide()
+        setPyodide(instance)
+      } catch (error) {
+        console.error('Pyodide initialization failed:', error)
+      }
+    })()
+
+    return () => {
+      controller.abort()
+      // Очистка при размонтировании
+      terminalInstance.current?.dispose()
+      terminalInstance.current = null
+      pyodideInstance.current = null
+    }
+  }, [initTerminal, initPyodide])
+
+  // Оптимизированная функция выполнения кода
+  const executeCode = useCallback(async () => {
+    if (!pyodideInstance.current || !terminalInstance.current || isRunning) return
 
     setIsRunning(true)
-    resetTerminal() // Используем новую функцию очистки
+    resetTerminal()
 
     try {
-      pyodide.globals.set('user_code', code)
-      await pyodide.runPythonAsync('run_user_code()')
+      pyodideInstance.current.globals.set('user_code', code)
+      await pyodideInstance.current.runPythonAsync('run_user_code()')
     } catch (error) {
-      terminalInstance.current?.writeln(`\x1b[31mСистемная ошибка: ${error}\x1b[0m`)
+      terminalInstance.current.writeln(`\x1b[31mСистемная ошибка: ${error}\x1b[0m\r\n`)
     } finally {
       setIsRunning(false)
     }
-  }
+  }, [code, isRunning, resetTerminal])
 
   return (
     <div className={classNames(cls.app, {}, ['container'])}>
@@ -184,7 +191,7 @@ def run_user_code():
             defaultLanguage={language}
             language={language}
             value={code}
-            onChange={(value) => value && setCode(value)}
+            onChange={(value) => setCode(value || '')}
             height="400px"
             theme="vs-dark"
             options={{
@@ -200,7 +207,7 @@ def run_user_code():
             onClick={executeCode}
             disabled={isPyodideLoading || isRunning}
             className={cls.executeBtn}>
-            {isPyodideLoading ? 'Загрузка Python...' : isRunning ? 'Выполняется...' : 'Выполнить'}
+            {isPyodideLoading ? 'Загрузка...' : isRunning ? 'Выполняется...' : 'Выполнить'}
           </button>
         </div>
 
