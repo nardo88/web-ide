@@ -12,32 +12,42 @@ type LanguageTypes = 'python' | 'php' | 'typescript'
 
 export const App: FC = () => {
   const [language, setLanguage] = useState<LanguageTypes>('python')
-  const [code, setCode] = useState(`# Пример простой программы
-def greet():
-    name = input("Как вас зовут? ")
-    print(f"Привет, {name}!")
+  const [code, setCode] = useState(`# Найдем минимальное из трех чисел
+a = int(input("Введите первое число: "))
+b = int(input("Введите второе число: "))
+c = int(input("Введите третье число: "))
 
-greet()`)
+min_val = a
+if b < min_val:
+    min_val = b
+if c < min_val:
+    min_val = c
 
+print("Наименьшее число:", min_val)`)
   const [pyodide, setPyodide] = useState<PyodideInterface | null>(null)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'running' | 'error'>('loading')
+  const [isPyodideLoading, setIsPyodideLoading] = useState(true)
+  const [isRunning, setIsRunning] = useState(false)
 
   const terminalRef = useRef<HTMLDivElement>(null)
   const terminalInstance = useRef<Terminal | null>(null)
   const fitAddon = useRef<FitAddon | null>(null)
-  const inputBuffer = useRef<string[]>([])
-  const resolveInput = useRef<((value: string) => void) | null>(null)
-  const executionTimeout = useRef<NodeJS.Timeout | null>(null)
+  const inputQueue = useRef<string[]>([])
+  const resolveInputPromise = useRef<((value: string) => void) | null>(null)
 
   // Инициализация терминала
   useEffect(() => {
     if (!terminalRef.current) return
 
+    // Создаем новый терминал при каждом монтировании
     terminalInstance.current = new Terminal({
       cursorBlink: true,
       fontFamily: 'JetBrains Mono, monospace',
       fontSize: 14,
-      theme: { background: '#1e1e1e', foreground: '#d4d4d4' },
+      theme: {
+        background: '#1e1e1e',
+        foreground: '#d4d4d4',
+      },
+      allowTransparency: true,
     })
 
     fitAddon.current = new FitAddon()
@@ -45,127 +55,124 @@ greet()`)
     terminalInstance.current.open(terminalRef.current)
     fitAddon.current.fit()
 
-    terminalInstance.current.onData((data) => {
+    const handleTerminalData = (data: string) => {
       if (data === '\r') {
-        // Enter pressed
-        terminalInstance.current?.writeln('')
-        if (resolveInput.current && inputBuffer.current.length > 0) {
-          resolveInput.current(inputBuffer.current.shift() || '')
-          resolveInput.current = null
+        if (resolveInputPromise.current) {
+          const input = inputQueue.current.shift()
+          if (input !== undefined) {
+            terminalInstance.current?.writeln('')
+            resolveInputPromise.current(input)
+            resolveInputPromise.current = null
+          }
         }
       } else if (data === '\x7f') {
-        // Backspace
-        if (inputBuffer.current.length > 0) {
-          const current = inputBuffer.current.pop() || ''
-          inputBuffer.current.push(current.slice(0, -1))
+        if (
+          inputQueue.current.length > 0 &&
+          inputQueue.current[inputQueue.current.length - 1].length > 0
+        ) {
+          const currentInput = inputQueue.current[inputQueue.current.length - 1]
+          inputQueue.current[inputQueue.current.length - 1] = currentInput.slice(0, -1)
           terminalInstance.current?.write('\b \b')
         }
       } else {
-        // Regular input
-        if (inputBuffer.current.length === 0) inputBuffer.current.push('')
-        inputBuffer.current[inputBuffer.current.length - 1] += data
+        if (inputQueue.current.length === 0) {
+          inputQueue.current.push('')
+        }
+        inputQueue.current[inputQueue.current.length - 1] += data
         terminalInstance.current?.write(data)
       }
-    })
+    }
+
+    terminalInstance.current.onData(handleTerminalData)
 
     return () => {
       terminalInstance.current?.dispose()
+      terminalInstance.current = null
     }
   }, [])
 
+  // Полная очистка терминала
+  const resetTerminal = () => {
+    if (terminalInstance.current) {
+      // Создаем новый терминал вместо очистки
+      terminalInstance.current.dispose()
+      terminalInstance.current = new Terminal({
+        cursorBlink: true,
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: 14,
+        theme: {
+          background: '#1e1e1e',
+          foreground: '#d4d4d4',
+        },
+      })
+
+      if (fitAddon.current && terminalRef.current) {
+        terminalInstance.current.loadAddon(fitAddon.current)
+        terminalInstance.current.open(terminalRef.current)
+        fitAddon.current.fit()
+      }
+    }
+    inputQueue.current = []
+    resolveInputPromise.current = null
+  }
+
   // Инициализация Pyodide
   useEffect(() => {
-    const init = async () => {
+    const initPyodide = async () => {
       try {
-        setStatus('loading')
-        terminalInstance.current?.writeln('Инициализация Python...\r\n')
-
         const pyodideInstance = await loadPyodide({
           indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.0/full/',
           stdout: (msg) => terminalInstance.current?.write(msg),
-          stderr: (msg) => terminalInstance.current?.write(`\x1b[31m${msg}\x1b[0m`),
+          stderr: (msg) => terminalInstance.current?.write('\x1b[31m' + msg + '\x1b[0m'),
         })
 
-        // Настройка окружения Python
-        await pyodideInstance.runPythonAsync(`
-import sys
-import traceback
-from js import console
-
-def execute_code(code):
-    try:
-        # Перенаправляем ввод/вывод
-        old_stdin = sys.stdin
-        old_stdout = sys.stdout
-        
-        class ConsoleIO:
-            def write(self, text):
-                console.log(text)
-                return len(text)
-                
-            def readline(self):
-                return input()
-                
-        sys.stdin = ConsoleIO()
-        sys.stdout = ConsoleIO()
-        
-        # Выполняем код
-        exec(code, globals())
-        
-    except Exception as e:
-        traceback.print_exc()
-    finally:
-        sys.stdin = old_stdin
-        sys.stdout = old_stdout
-`)
-
-        // Переопределяем input() для Python
         pyodideInstance.globals.set('input', (prompt = '') => {
           terminalInstance.current?.write(prompt)
-          return new Promise((resolve) => {
-            resolveInput.current = resolve
+          return new Promise<string>((resolve) => {
+            resolveInputPromise.current = resolve
           })
         })
 
         setPyodide(pyodideInstance)
-        setStatus('ready')
-        terminalInstance.current?.writeln(
-          '\x1b[32mГотово! Введите код и нажмите "Выполнить"\x1b[0m\r\n'
-        )
+
+        await pyodideInstance.runPythonAsync(`
+import sys
+import traceback
+
+def run_user_code():
+    try:
+        exec(user_code, globals())
+    except ValueError:
+        print("\\x1b[31mОшибка ввода: убедитесь, что введены числа\\x1b[0m")
+    except Exception:
+        print("\\x1b[31mОшибка выполнения:\\x1b[0m")
+        traceback.print_exc()
+`)
+        terminalInstance.current?.writeln('\x1b[32mPython готов к работе!\x1b[0m')
       } catch (error) {
-        setStatus('error')
-        terminalInstance.current?.writeln(`\x1b[31mОшибка инициализации: ${error}\x1b[0m\r\n`)
+        terminalInstance.current?.writeln('\x1b[31mОшибка загрузки Python:\x1b[0m')
+        terminalInstance.current?.writeln(`\x1b[31m${error}\x1b[0m`)
+      } finally {
+        setIsPyodideLoading(false)
       }
     }
 
-    init()
+    initPyodide()
   }, [])
 
-  const execute = async () => {
-    if (!pyodide || status === 'running') return
+  const executeCode = async () => {
+    if (!pyodide || !terminalInstance.current) return
 
-    setStatus('running')
-    terminalInstance.current?.writeln('\x1b[33mВыполнение...\x1b[0m\r\n')
-    inputBuffer.current = []
-    resolveInput.current = null
-
-    // Ограничение времени выполнения (5 секунд)
-    executionTimeout.current = setTimeout(() => {
-      terminalInstance.current?.writeln('\x1b[31mПревышено время выполнения (5 сек)\x1b[0m\r\n')
-      setStatus('ready')
-    }, 5000)
+    setIsRunning(true)
+    resetTerminal() // Используем новую функцию очистки
 
     try {
-      await pyodide.runPythonAsync(`execute_code(${JSON.stringify(code)})`)
+      pyodide.globals.set('user_code', code)
+      await pyodide.runPythonAsync('run_user_code()')
     } catch (error) {
-      terminalInstance.current?.writeln(`\x1b[31mОшибка выполнения: ${error}\x1b[0m\r\n`)
+      terminalInstance.current?.writeln(`\x1b[31mСистемная ошибка: ${error}\x1b[0m`)
     } finally {
-      if (executionTimeout.current) {
-        clearTimeout(executionTimeout.current)
-        executionTimeout.current = null
-      }
-      setStatus('ready')
-      terminalInstance.current?.writeln('\x1b[33mГотово\x1b[0m\r\n')
+      setIsRunning(false)
     }
   }
 
@@ -177,7 +184,7 @@ def execute_code(code):
             defaultLanguage={language}
             language={language}
             value={code}
-            onChange={(value) => setCode(value || '')}
+            onChange={(value) => value && setCode(value)}
             height="400px"
             theme="vs-dark"
             options={{
@@ -189,12 +196,11 @@ def execute_code(code):
               renderWhitespace: 'none',
             }}
           />
-          <button onClick={execute} disabled={status !== 'ready'} className={cls.executeBtn}>
-            {status === 'loading'
-              ? 'Загрузка...'
-              : status === 'running'
-              ? 'Выполнение...'
-              : 'Выполнить'}
+          <button
+            onClick={executeCode}
+            disabled={isPyodideLoading || isRunning}
+            className={cls.executeBtn}>
+            {isPyodideLoading ? 'Загрузка Python...' : isRunning ? 'Выполняется...' : 'Выполнить'}
           </button>
         </div>
 
