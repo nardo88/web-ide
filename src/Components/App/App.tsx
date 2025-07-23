@@ -10,7 +10,7 @@ import { loadPyodide, PyodideInterface } from 'pyodide'
 
 type LanguageTypes = 'python' | 'php' | 'typescript'
 
-// Кешируем загруженные пакеты Pyodide
+// Python, C++, PHP, Swift, C#
 const loadedPackages = new Set<string>()
 
 export const App: FC = () => {
