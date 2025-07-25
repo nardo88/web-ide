@@ -1,0 +1,96 @@
+@import '../../index.scss';
+
+.label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 125%;
+  user-select: none;
+}
+
+.required {
+  &:after {
+    content: ' *';
+  }
+}
+
+.input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 20px;
+  background-color: var(--base-100);
+  border: 1px solid var(--base-400);
+  border-radius: 8px;
+}
+
+.dropDown {
+  position: absolute;
+  max-height: 250px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 20px;
+  background-color: var(--base-100);
+  border-radius: 4px;
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.15);
+
+  @include scroll;
+}
+
+.selectOption {
+  padding: 8px 12px;
+  color: var(--content-900);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--base-400);
+  }
+
+  @media (max-width: 768px) {
+    padding: 6px 8px;
+  }
+}
+
+.errorText {
+  font-size: 12px;
+  line-height: 125%;
+}
+
+div.error {
+  color: var(--additional-error);
+  border: 1px solid var(--additional-error);
+}
+
+label.error {
+  color: var(--additional-error);
+}
+
+.arrow {
+  float: right;
+  height: 18px;
+  margin-left: 4px;
+
+  & > svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.rotate {
+  & > svg {
+    transform: rotate(180deg);
+  }
+}
+
+.cup {
+  cursor: pointer;
+}
+
+.disabled {
+  color: var(--content-800);
+  cursor: default;
+}

@@ -1,0 +1,77 @@
+@import '../../index.scss';
+
+.contextMenu {
+  border-color: transparent;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 6px;
+}
+
+.menuWrapper {
+  position: fixed;
+  opacity: 0;
+}
+
+@keyframes show {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.showList {
+  animation: show 0.5s forwards;
+}
+
+.menuList {
+  display: flex;
+  flex-direction: column;
+  max-height: 250px;
+  padding: 8px;
+  overflow-y: auto;
+  background-color: var(--base-100);
+  border-radius: 8px;
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.15);
+
+  @include scroll;
+}
+
+.menuItem {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 8px;
+  font-weight: 400;
+  color: var(--content-900);
+  cursor: pointer;
+  border-radius: 4px;
+
+  & > p {
+    font-size: 14px;
+    line-height: 125%;
+    text-align: left;
+  }
+
+  &:hover {
+    background-color: var(--base-300);
+  }
+}
+
+.moveLeft {
+  transform: translateX(-100%);
+}
+.moveTop {
+  transform: translateY(-100%);
+}
+
+.moveTopLeft {
+  transform: translate(-100%, -100%);
+}
+
+.current {
+  border-color: var(--base-400);
+  border-style: inset;
+}

@@ -1,0 +1,33 @@
+.sidebar {
+  grid-area: sidebar;
+  border-right: 1px solid var(--base-400);
+  transition: width 0.3s ease-in-out;
+  width: 51px;
+  box-shadow: -3px 0px 5px 5px rgba(0, 0, 0, 0.2);
+}
+
+.isOpen {
+  width: var(--sidebar-width);
+}
+
+.top {
+  display: flex;
+  justify-content: flex-end;
+  border-bottom: 1px solid var(--base-300);
+  padding: 10px;
+}
+
+.toggleBtn {
+  width: 30px;
+  height: 30px;
+  border-color: var(--content-700);
+}
+
+.icon {
+  stroke: var(--content-700);
+  transform: rotate(-90deg);
+  transition: transform 0.3s ease-in-out;
+}
+.openIcon {
+  transform: rotate(90deg);
+}

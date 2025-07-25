@@ -1,0 +1,61 @@
+.h1 {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 130%;
+  color: var(--content-900);
+}
+
+.h2 {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 130%;
+  color: var(--content-900);
+}
+.h3 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 130%;
+  color: var(--content-900);
+}
+.h4 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 130%;
+  color: var(--content-900);
+}
+.h5 {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 130%;
+  color: var(--content-900);
+}
+
+.text {
+  font-size: 14px;
+  line-height: 130%;
+  color: var(--content-900);
+}
+
+.helper {
+  font-size: 14px;
+  line-height: 125%;
+  color: var(--content-800);
+}
+
+.error {
+  font-size: 14px;
+  line-height: 125%;
+  color: var(--additional-error);
+}
+
+.success {
+  font-size: 14px;
+  line-height: 125%;
+  color: var(--additional-success);
+}
+
+.small {
+  font-size: 11px;
+  line-height: 130%;
+  color: var(--content-800);
+}

@@ -1,0 +1,50 @@
+.accordion {
+  border: 1px solid var(--base-400);
+  border-radius: 6px;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+.wrapper {
+  padding: 5px 10px;
+  margin-top: 5px;
+}
+
+.titleWrapper {
+  user-select: none;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.arrow {
+  transform: rotate(0);
+  transition: transform 0.3s ease-in-out;
+}
+.arrowOpen {
+  transform: rotate(180deg);
+}
+
+.bottom {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.3s ease; /* Анимация изменения высоты */
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 8px;
+  min-height: 0;
+}
+
+.isOpen {
+  grid-template-rows: 1fr;
+}
