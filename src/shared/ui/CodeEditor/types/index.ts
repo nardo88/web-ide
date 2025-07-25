@@ -1,1 +1,1 @@
-export type LanguagesType = 'python'
+export type LanguagesType = 'python' | 'php' | 'typescript'

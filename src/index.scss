@@ -57,3 +57,8 @@ button {
     padding: 0 20px;
   }
 }
+
+.xterm .xterm-viewport {
+  overflow-y: auto !important;
+  scrollbar-gutter: stable;
+}

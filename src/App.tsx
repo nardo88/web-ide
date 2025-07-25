@@ -4,6 +4,8 @@ import { Page404 } from '@pages/404'
 import { LanguagesPage } from '@pages/[language]'
 import { Layout } from '@widgets/Layout'
 
+// Python, C++, PHP, Swift, C#
+
 const router = createBrowserRouter([
   {
     path: '/',
