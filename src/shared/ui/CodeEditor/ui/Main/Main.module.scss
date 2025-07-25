@@ -1,4 +1,8 @@
 .codeEditor {
+  width: 100%;
+  height: 400px;
+  min-width: 0; /* Важно для flex-контейнеров */
+
   * {
     font-family: 'JetBrains Mono', monospace !important;
   }

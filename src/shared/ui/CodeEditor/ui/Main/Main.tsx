@@ -26,7 +26,6 @@ export const Main: FC<ICodeEditorProps> = (props) => {
         language={language}
         value={value}
         onChange={(value) => onChange(value || '')}
-        height="400px"
         theme="vs-dark"
         options={{
           fontFamily: 'JetBrains Mono',
@@ -35,6 +34,7 @@ export const Main: FC<ICodeEditorProps> = (props) => {
           minimap: { enabled: false },
           scrollBeyondLastLine: false,
           renderWhitespace: 'none',
+          automaticLayout: true,
         }}
       />
     </div>

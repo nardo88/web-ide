@@ -19,6 +19,9 @@ export const Main: FC = () => {
   const pyodideInstance = useRef<PyodideInterface | null>(null)
 
   const executeCode = async () => {
+    if (!code.trim()) {
+      return setTerminal(`\x1b[31mNo code\x1b[0m`)
+    }
     if (!pyodideInstance.current || isRunning) return
 
     setIsRunning(true)
@@ -55,7 +58,7 @@ export const Main: FC = () => {
       const instance = await loadPyodide({
         indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.28.0/full/',
         stdout: (msg) => setTerminal((p) => (p += msg + '\x1b[0m\r\n')),
-        stderr: (msg) => setTerminal(`\x1b[31m${msg}\x1b[0m`),
+        stderr: (msg) => setTerminal((p) => p + `\x1b[31m${msg}\x1b[0m\r\n`),
       })
 
       await loadRequiredPackages(instance)
