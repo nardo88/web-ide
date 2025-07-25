@@ -14,6 +14,7 @@ interface LayoutProps {
 export const Main: FC<LayoutProps> = ({ children }) => {
   const signinHandler = () => null
   const signupHandler = () => null
+
   return (
     <div className={cls.Layout}>
       <header className={cls.header}>

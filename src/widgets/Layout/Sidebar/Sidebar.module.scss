@@ -31,3 +31,32 @@
 .openIcon {
   transform: rotate(90deg);
 }
+
+.linkWrapper {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out;
+}
+.isVisible {
+  visibility: visible;
+  opacity: 1;
+}
+
+.linkItem {
+  a {
+    padding: 10px;
+    display: flex;
+    text-decoration: none;
+    color: var(--content-800);
+    font-size: 16px;
+
+    &:hover {
+      background: var(--base-200);
+    }
+  }
+}
+.active {
+  a {
+    background: var(--base-200);
+  }
+}
