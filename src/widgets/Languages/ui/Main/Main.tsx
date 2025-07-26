@@ -2,6 +2,7 @@ import { type FC } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { JavaScript } from '@features/JavaScript'
+import { Php } from '@features/Php'
 import { Python } from '@features/Python'
 import { TypeScript } from '@features/TypeScript'
 
@@ -22,6 +23,8 @@ export const Main: FC = () => {
             return <JavaScript />
           case 'typescript':
             return <TypeScript />
+          case 'php':
+            return <Php />
           default:
             return <NotFoundPage />
         }

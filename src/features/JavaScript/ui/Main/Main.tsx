@@ -20,7 +20,12 @@ export const Main: FC = () => {
   }
 
   useEffect(() => {
-    const worker = new Worker(new URL('/worker.js', import.meta.url))
+    const worker = new Worker(
+      new URL('../../../../shared/workers/javaScriptWorker.ts', import.meta.url),
+      {
+        type: 'module',
+      }
+    )
     worker.onmessage = (e) => {
       const { type, data } = e.data
       if (type === 'stdout') terminal.current?.print(data)
