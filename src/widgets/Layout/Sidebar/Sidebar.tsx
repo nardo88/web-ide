@@ -7,7 +7,10 @@ import ArrowBottom from '@shared/ui/icons/ArrowBottom'
 
 import cls from './Sidebar.module.scss'
 
-const links = [{ path: 'python', title: 'Python' }]
+const links = [
+  { path: 'python', title: 'Python' },
+  { path: 'javascript', title: 'JavaScript' },
+]
 
 export const Sidebar: FC = () => {
   const { language } = useParams()

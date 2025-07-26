@@ -22,6 +22,7 @@ export const Main: FC<ICodeEditorProps> = (props) => {
   return (
     <div className={classNames(cls.codeEditor, {}, [className])}>
       <Editor
+        key={language}
         defaultLanguage={language}
         language={language}
         value={value}
