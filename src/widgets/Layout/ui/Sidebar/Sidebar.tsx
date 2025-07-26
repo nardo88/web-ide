@@ -5,12 +5,9 @@ import { classNames } from '@shared/helpers/classNames'
 import Button from '@shared/ui/Button/Button'
 import ArrowBottom from '@shared/ui/icons/ArrowBottom'
 
-import cls from './Sidebar.module.scss'
+import { links } from '../../const'
 
-const links = [
-  { path: 'python', title: 'Python' },
-  { path: 'javascript', title: 'JavaScript' },
-]
+import cls from './Sidebar.module.scss'
 
 export const Sidebar: FC = () => {
   const { language } = useParams()

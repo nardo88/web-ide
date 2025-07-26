@@ -1,22 +1,31 @@
 import { type FC, useEffect, useRef, useState } from 'react'
 
+import * as ts from 'typescript'
+
 import Button from '@shared/ui/Button/Button'
 import { CodeEditor } from '@shared/ui/CodeEditor'
 import { type ITerminalRef, Terminal } from '@shared/ui/Terminal/Terminal'
 
 import cls from './Main.module.scss'
 
+const compileTS = (code: string) => {
+  const result = ts.transpileModule(code, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2017 },
+  })
+  return result.outputText
+}
+
 export const Main: FC = () => {
   const [code, setCode] = useState('')
   const [isRunning, setIsRunning] = useState(false)
-  const workerRef = useRef<Worker | null>(null)
   const terminal = useRef<ITerminalRef | null>(null)
+  const workerRef = useRef<Worker | null>(null)
 
   const executeCode = () => {
     if (!workerRef.current) return
     setIsRunning(true)
     terminal.current?.clear()
-    workerRef.current.postMessage({ code })
+    workerRef.current.postMessage({ code: compileTS(code) })
   }
 
   useEffect(() => {
@@ -33,7 +42,7 @@ export const Main: FC = () => {
 
   return (
     <div className={cls.main}>
-      <CodeEditor language="javascript" value={code} onChange={setCode} />
+      <CodeEditor language="typescript" value={code} onChange={setCode} />
       <div className={cls.btnWrapper}>
         <Button
           onClick={() => terminal.current?.clear()}

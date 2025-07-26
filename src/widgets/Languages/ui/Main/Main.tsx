@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 
 import { JavaScript } from '@features/JavaScript'
 import { Python } from '@features/Python'
+import { TypeScript } from '@features/TypeScript'
 
 import { NotFoundPage } from '@shared/ui/NotFoundPage/NotFoundPage'
 
@@ -19,6 +20,8 @@ export const Main: FC = () => {
             return <Python />
           case 'javascript':
             return <JavaScript />
+          case 'typescript':
+            return <TypeScript />
           default:
             return <NotFoundPage />
         }
