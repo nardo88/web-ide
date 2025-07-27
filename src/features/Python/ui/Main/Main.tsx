@@ -63,13 +63,6 @@ export const Main: FC = () => {
 
       await loadRequiredPackages(instance)
 
-      // instance.globals.set('input', (prompt = '') => {
-      //   setTerminal(prompt)
-      //   return new Promise<string>((_resolve) => {
-      //       resolveInputPromise.current = resolve
-      //   })
-      // })
-
       await instance.runPythonAsync(`
 import sys
 import traceback
