@@ -13,7 +13,18 @@ const PHP_WEB_URL = 'https://cdn.jsdelivr.net/npm/php-wasm/PhpWeb.mjs'
 let PhpWebClass: any = null
 
 export const Main: FC = () => {
-  const [code, setCode] = useState('<?php echo "Hello, PHP!"; ?>')
+  const [code, setCode] = useState(`
+<?php
+function sum($a, $b) {
+    return $a + $b;
+}
+
+$result = sum(5, 7);
+
+echo "Результат сложения: $result\\n";
+
+?>
+    `)
   const [isRunning, setIsRunning] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const terminal = useRef<ITerminalRef | null>(null)
