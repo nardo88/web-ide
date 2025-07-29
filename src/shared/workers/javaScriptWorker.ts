@@ -1,24 +1,43 @@
 export {}
 
-declare const self: DedicatedWorkerGlobalScope
-
-// Переопределяем только методы log и error, не трогая весь объект console
-console.log = (...args: any[]) => {
-  self.postMessage({ type: 'stdout', data: args.join(' ') })
+// Преобразование объекта в компактную строку
+function formatValue(value: unknown): string {
+  if (typeof value === 'object' && value !== null) {
+    try {
+      return `{ ${Object.entries(value)
+        .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
+        .join(', ')} }`
+    } catch {
+      return '[Circular]'
+    }
+  }
+  return String(value)
 }
 
-console.error = (...args: any[]) => {
-  self.postMessage({ type: 'stderr', data: args.join(' ') })
+function formatArgs(args: unknown[]) {
+  return args.map(formatValue).join(' ')
 }
 
+// Переопределяем console.log
+console.log = (...args: unknown[]) => {
+  self.postMessage({ type: 'stdout', data: formatArgs(args) })
+}
+
+// Переопределяем console.error
+console.error = (...args: unknown[]) => {
+  self.postMessage({ type: 'stderr', data: formatArgs(args) })
+}
+
+// Получаем код и выполняем его
 self.onmessage = (event: MessageEvent<{ code: string }>) => {
   const { code } = event.data
   try {
-    // Выполняем переданный JS код
     const result = new Function(code)()
-    self.postMessage({ type: 'stdout', data: String(result ?? '') })
+    if (result !== undefined) {
+      self.postMessage({ type: 'stdout', data: formatValue(result) })
+    }
   } catch (e: any) {
-    self.postMessage({ type: 'stderr', data: e.message })
+    self.postMessage({ type: 'stderr', data: e?.stack || e?.message || String(e) })
   } finally {
     self.postMessage({ type: 'done' })
   }
